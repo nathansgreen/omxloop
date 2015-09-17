@@ -20,6 +20,10 @@ def omx_cmd():
     return out
 
 
+def config_file_path():
+    return os.path.expanduser('~/.omxloop')
+
+
 def list_media_files(media_dir):
     for root, dirs, files in os.walk(media_dir):
         files[:] = [f for f in files if not f[0] == '.']  # not hidden
@@ -30,7 +34,7 @@ def list_media_files(media_dir):
 def get_last_file():
     config = ''
     try:
-        with open ('.omxloop', 'r') as file:
+        with open (config_file_path(), 'r') as file:
             config = file.read().replace('\n', '')
     except (IOError):
         pass
@@ -39,7 +43,7 @@ def get_last_file():
 
 def write_last_file(media_dir, file_name):
     try:
-        with open ('.omxloop', 'w') as file:
+        with open (config_file_path(), 'w') as file:
             file.write(file_name)
     except (IOError):
         pass
@@ -57,9 +61,10 @@ def loop(video_dir, restart):
         local.call('clear', shell=True)
         out = local.call('%s %s %s "%s" >/dev/null' % (omxplayer, stretch, hdmi_audio, file),
                          shell=True)
-    write_last_file(video_dir, '')
+    write_last_file(video_dir, '')  # clear restart file
     if restart:
         loop(video_dir, None)
+
 
 if __name__ == '__main__':
     while True:
