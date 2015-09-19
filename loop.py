@@ -4,9 +4,10 @@ import os
 import time
 import subprocess as local
 
-omxplayer = 'omxplayer'
+video_dir = './'  # location of video files
+omxplayer = 'omxplayer'  # command name
 stretch = '-r'  # `-r` empty string to disable
-hdmi_audio = '-o'  # `-o` empty string to disable
+hdmi_audio = '-o hdmi'  # `-o hdmi` empty string to disable
 
 
 def is_running(omx):
@@ -59,8 +60,9 @@ def loop(video_dir, restart):
         restart = None
         write_last_file(video_dir, file)
         local.call('clear', shell=True)
-        out = local.call('%s %s %s "%s" >/dev/null' % (omxplayer, stretch, hdmi_audio, file),
-                         shell=True)
+        cmd = '%s %s %s "%s"' % (omxplayer, stretch, hdmi_audio, file)
+        # play video and wait for it to finish
+        out = local.call(cmd, shell=False, stdout=None, stderr=None)
     write_last_file(video_dir, '')  # clear restart file
     if restart:
         loop(video_dir, None)
@@ -68,4 +70,4 @@ def loop(video_dir, restart):
 
 if __name__ == '__main__':
     while True:
-        loop('./', get_last_file())
+        loop(video_dir, get_last_file())
