@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
 
+import argparse
 import os
 import time
 import subprocess as local
@@ -13,12 +14,20 @@ hdmi_audio = '-o hdmi'  # `-o hdmi` empty string to disable
 def is_running(omx):
     out = local.call('ps ax |grep -v grep |grep "%s" >/dev/null' % omx,
                      shell=True)
-    return out != 0  # len(out) > 0
+    return out == 0  # len(out) > 0
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        pass
 
 
 def omx_cmd():
     out = local.check_output('which %s' % omxplayer, shell=True)
-    return out
+    return out.strip() if not is_number(out) else omxplayer
 
 
 def config_file_path():
@@ -50,6 +59,11 @@ def write_last_file(media_dir, file_name):
         pass
 
 
+def clear_restart(video_dir):
+    """Clear restart position from settings file"""
+    write_last_file(video_dir, '')
+
+
 def loop(video_dir, restart):
     while is_running(omx_cmd()):
         time.sleep(1)
@@ -59,15 +73,22 @@ def loop(video_dir, restart):
             continue
         restart = None
         write_last_file(video_dir, file)
-        local.call('clear', shell=True)
-        cmd = '%s %s %s "%s"' % (omxplayer, stretch, hdmi_audio, file)
+        cmd = 'clear; %s %s %s "%s"' % (omx_cmd(), stretch, hdmi_audio, file)
         # play video and wait for it to finish
-        out = local.call(cmd, shell=False, stdout=None, stderr=None)
-    write_last_file(video_dir, '')  # clear restart file
+        out = local.call(cmd, shell=True, stdout=None, stderr=None)
+        if out != 0:
+            raise Exception(cmd)
+    clear_restart(video_dir)
     if restart:
         loop(video_dir, None)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Play a list of videos repeatedly.')
+    parser.add_argument('--reset', action='store_true', help='reset configuration')
+    args = parser.parse_args()
+    if args.reset:
+        clear_restart(video_dir)
+
     while True:
         loop(video_dir, get_last_file())
