@@ -26,15 +26,18 @@ def is_number(s):
 
 
 def omx_cmd():
+    """return the full path to the omxplayer command"""
     out = local.check_output('which %s' % omxplayer, shell=True)
     return out.strip() if not is_number(out) else omxplayer
 
 
 def config_file_path():
+    """Full path to config file"""
     return os.path.expanduser('~/.omxloop')
 
 
 def list_media_files(media_dir):
+    """Given a 'media_dir', list immediate children"""
     for root, dirs, files in os.walk(media_dir):
         files[:] = [f for f in files if not f[0] == '.']  # not hidden
         dirs[:] = [d for d in dirs if d == root]
@@ -73,11 +76,11 @@ def loop(video_dir, restart):
             continue
         restart = None
         write_last_file(video_dir, file)
-        cmd = 'clear; %s %s %s "%s"' % (omx_cmd(), stretch, hdmi_audio, file)
+        cmd = 'clear; %s %s %s "%s/%s"' % (omx_cmd(), stretch, hdmi_audio, video_dir, file)
         # play video and wait for it to finish
         out = local.call(cmd, shell=True, stdout=None, stderr=None)
         if out != 0:
-            raise Exception(cmd)
+            raise Exception(cmd)  # try to explain what went wrong
     clear_restart(video_dir)
     if restart:
         loop(video_dir, None)
@@ -91,4 +94,5 @@ if __name__ == '__main__':
         clear_restart(video_dir)
 
     while True:
+        video_dir = os.path.abspath(video_dir)
         loop(video_dir, get_last_file())
